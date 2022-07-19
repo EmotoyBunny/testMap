@@ -1,8 +1,14 @@
 import React, {Component} from "react";
-import {Map, Polygon, Popup, TileLayer, Marker, Circle,} from 'react-leaflet';
+import {MapContainer, Polygon, Popup, TileLayer, Marker, FeatureGroup, Circle, useMapEvents} from 'react-leaflet';
 import {divIcon} from "leaflet";
+import {EditControl} from "react-leaflet-draw"
 import {renderToStaticMarkup} from "react-dom/server";
 import RoomIcon from '@material-ui/icons/Room';
+import 'leaflet/dist/leaflet.css';
+import "leaflet"
+import L from "leaflet";
+import "leaflet-draw"
+import "leaflet-draw/dist/leaflet.draw-src.css"
 
 class MapStart extends Component {
     constructor(props) {
@@ -23,20 +29,27 @@ class MapStart extends Component {
                 [47.1179735, 37.6342808],
                 [47.568459, 38.861942],
             ],
-            markerSelect: [],
+            newPolygon: [],
+            markerSelect: [1, 1],
         };
         this.mapRef = React.createRef();
         this.markerRef = React.createRef();
     }
 
-    componentDidUpdate = (prevState) => {
-        if (this.state.markerSelect !== [] && (this.state.markerSelect !== prevState.markerSelect)) {
-            this.mapRef?.current?.leafletElement.flyTo(this.state.markerSelect, 12);
-        }
-    };
+    /*  componentDidUpdate = (prevState) => {
+           if (this.state.markerSelect !== [] && (this.state.markerSelect !== prevState.markerSelect)) {
+               console.log(1)
+               this.mapRef?.current?.leafletElement.flyTo(this.state.markerSelect, 12);
+           }
+       };*/
 
     handleClickMarker = () => {
-        this.setState({markerSelect: [47.21744415, 38.898958906]})
+        this.setState({markerSelect: [47.21744415, 38.898958906]});
+       /* const map = useMapEvents(
+            () => {
+                map.flyTo([47.21744415, 38.898958906], 12)
+            },
+        )*/
     };
 
     render() {
@@ -44,7 +57,7 @@ class MapStart extends Component {
         let layer = 'http://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png';
         let iconColor = ["red", "black", "blue", "white", "yellow", "purple"];
         return (<div>
-            <Map
+            <MapContainer
                 zoom={mapOptions.zoom}
                 style={{
                     height: "100vh",
@@ -53,6 +66,7 @@ class MapStart extends Component {
                 center={mapOptions.center}
                 ref={this.mapRef}
             >
+
                 <TileLayer
                     url={layer}
                 />
@@ -73,7 +87,10 @@ class MapStart extends Component {
                             />),
                         })}
                         title={index}
-                        onClick={() => this.handleClickMarker()}
+                        onClick={() => {
+                            console.log(1)
+                            //this.handleClickMarker()
+                        }}
                     >
                         <Popup>
                             {(index + 1) + " [" + item[0] + ", " + item[1] + "]"}
@@ -90,7 +107,37 @@ class MapStart extends Component {
                     pathOptions={{fillColor: "red"}}
                     radius={10000}
                 />
-            </Map>
+                <FeatureGroup>
+                    <EditControl
+                        position='topleft'
+                        onEdited={() => {
+                        }}
+                        onCreated={(e) => {
+                            console.log(e);
+                            if (e.layerType === 'polygon') {
+                                let objectsLayer = e.layer._rings;
+                                let arrayLayer = [];
+                                for (let i = 0; i < objectsLayer[0].length; i++) {
+                                    arrayLayer.push([objectsLayer[0][i].x, objectsLayer[0][i].y])
+                                }
+                                this.setState({newPolygon: arrayLayer}, () => {
+                                    console.log(this.state.newPolygon);
+                                    let text = "";
+                                    for (let i = 0; i < this.state.newPolygon.length; i++) {
+                                        text = text + "Координата " + (i + 1) + ": " + this.state.newPolygon[i] + "\n"
+                                    }
+                                    alert(text)
+                                })
+                            }
+                        }}
+                        onDeleted={() => {
+                        }}
+                        draw={{
+                            rectangle: false
+                        }}
+                    />
+                </FeatureGroup>
+            </MapContainer>
         </div>)
     }
 }
